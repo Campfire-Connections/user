@@ -7,8 +7,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from address.models import AddressField
 
-from pages.mixins import models as mixins
-# from pages.mixins import settings as stgs
+from core.mixins import models as mixins
+# from core.mixins import settings as stgs
 from faction.managers.attendee import AttendeeManager
 from faction.managers.leader import LeaderManager
 from facility.managers.faculty import FacultyManager
