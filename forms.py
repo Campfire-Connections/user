@@ -1,28 +1,40 @@
 # user/forms.py
-""" User Related Forms. """
 
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
 
-from .models import User
+from user.models import User
 
 
-class UserForm(forms.ModelForm):
+class RegistrationForm(UserCreationForm):
+    """A custom user registration form for creating new user accounts.
+
+    Extends the UserCreationForm to include an email field and customize the user creation process.
+
+    Attributes:
+        email: An email field with custom widget attributes.
+
+    Methods:
+        save: Overrides the default save method to set the user as inactive initially.
+    """
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "placeholder": "Email"}
+        ),
+    )
+
     class Meta:
         model = User
-        fields = ["username", "email", "first_name", "last_name"]
+        fields = ["username", "email", "password1", "password2"]
 
-
-class RegistrationForm(forms.Form):
-    username = forms.CharField()
-    email = forms.EmailField()
-    password = forms.CharField(widget=forms.PasswordInput)
-    first_name = forms.CharField()
-    last_name = forms.CharField()
-    user_type = forms.ChoiceField(
-        choices=[
-            ("", "Select A Type"),
-            ("Leader", "Leader"),
-            ("Attendee", "Attendee"),
-            ("Faculty", "Faculty"),
-        ]
-    )
+    def save(self, commit=True):
+        """
+        Save the user instance with an inactive status for email activation.
+        """
+        user = super().save(commit=False)
+        user.is_active = False
+        if commit:
+            user.save()
+        return user

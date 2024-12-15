@@ -12,17 +12,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from django.urls import reverse_lazy
 from django.template import loader, TemplateDoesNotExist
-from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
-from django.views import View
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
 
 # from address.forms import AddressForm
-# from facility.forms import FacultyProfileForm
 from facility.models.faculty import Faculty, FacultyProfile
 from faction.forms.attendee import AttendeeProfileForm
 from faction.forms.leader import LeaderProfileForm
-from facility.forms.faculty import FacultyProfileForm
-from faction.models.faction import Faction
+from facility.forms.faculty import FacultyForm
 from faction.models.leader import LeaderProfile
 from faction.models.attendee import AttendeeProfile
 
@@ -31,6 +29,23 @@ from .models import User
 
 
 logger = logging.getLogger(__name__)
+
+
+def activate_user(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "Your account has been activated successfully.")
+        return redirect("login")
+    else:
+        messages.error(request, "The activation link is invalid or has expired.")
+        return redirect("register")
 
 
 class LoginView(_LoginView):
@@ -186,7 +201,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Fetch leader-specific data
         context = {}
 
-        if user.user_type == 'LEADER' and user.is_admin:
+        if user.user_type == "LEADER" and user.is_admin:
             context = self.get_leader_admin_dashboard_items(user)
 
         context.update(
