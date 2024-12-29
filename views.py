@@ -15,6 +15,8 @@ from django.template import loader, TemplateDoesNotExist
 from django.views.generic.edit import FormView
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
+from django.utils.translation import gettext_lazy as _
+
 
 # from address.forms import AddressForm
 from facility.models.faculty import Faculty, FacultyProfile
@@ -23,6 +25,8 @@ from faction.forms.leader import LeaderProfileForm
 from facility.forms.faculty import FacultyForm
 from faction.models.leader import LeaderProfile
 from faction.models.attendee import AttendeeProfile
+from core.views.base import BaseDashboardView
+
 
 from .forms import RegistrationForm
 from .models import User
@@ -131,154 +135,47 @@ class LogoutView(_LogoutView):
     next_page = reverse_lazy("home")
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = None
+class DashboardView(LoginRequiredMixin, BaseDashboardView):
+    """
+    Main dashboard view that redirects users to their respective role-based dashboards.
+    """
+
+    # Role-based dashboard mappings
+    dashboard_redirects = {
+        "attendee": "attendees:dashboard",
+        "leader": "leaders:dashboard",
+        "faculty": "facultys:dashboard",
+    }
 
     def dispatch(self, request, *args, **kwargs):
-        # Redirect superusers to the admin panel
-        if request.user.is_superuser:
+        """
+        Redirect users to their respective dashboards based on their role or permissions.
+        """
+        user = request.user
+
+        # Superuser redirection
+        if user.is_superuser:
             return redirect(reverse_lazy("admin:index"))
-        return super().dispatch(request, *args, **kwargs)
 
-    def get_template_names(self):
-        user = self.request.user
+        # Redirect based on user type
+        dashboard_url = self.get_dashboard_redirect_url(user)
+        if dashboard_url:
+            return redirect(dashboard_url)
 
-        if not hasattr(user, "user_type") or not user.user_type:
-            raise ValueError("User type is not defined for this user.")
+        # Default fallback if no role-specific dashboard is found
+        logger.warning(f"No dashboard found for user type: {user.user_type}")
+        return redirect(reverse_lazy("default:dashboard"))
 
-        # Dynamically select the template based on user_type
-        template_name = f"{user.user_type.lower()}/dashboard.html"
-        logger.debug(f"Using template: {template_name}")
+    def get_dashboard_redirect_url(self, user):
+        """
+        Determine the appropriate dashboard URL for the user.
+        """
+        user_type = getattr(user, "user_type", "").lower()
 
-        # Check if the template exists
-        try:
-            loader.get_template(template_name)
-        except TemplateDoesNotExist:
-            logger.warning(
-                f"Template {template_name} does not exist. Falling back to default."
-            )
-            template_name = "auth/dashboard.html"
+        if user_type in self.dashboard_redirects:
+            return reverse_lazy(self.dashboard_redirects[user_type])
 
-        return [template_name]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        dashboard_items = {}
-
-        # Breadcrumbs for navigation
-        context["breadcrumbs"] = [{"name": "Dashboard", "url": "/dashboard"}]
-
-        # Load role-specific context
-        if user.user_type.lower() == "attendee":
-            dashboard_items |= self.get_attendee_dashboard_items(user)
-        elif user.user_type.lower() == "leader":
-            dashboard_items |= self.get_leader_dashboard_items(user)
-        elif user.user_type.lower() == "faculty":
-            dashboard_items |= self.get_faculty_dashboard_items(user)
-
-        sorted_dashboard_items = dict(
-            sorted(dashboard_items.items(), key=lambda item: item[1]["priority"])
-        )
-        context["dashboard_items"] = sorted_dashboard_items
-
-        # Log the final context for debugging
-        logger.debug("Context before rendering: %s", context)
-
-        return context
-
-    # Attendee Items
-    def get_attendee_dashboard_items(self, user):
-        # Fetch attendee-specific data
-        return {
-            "schedule": {"data": self.get_attendee_schedule(user), "priority": 10},
-            "announcements": {"data": self.get_announcements(user), "priority": 40},
-            "resources": {"data": self.get_resources(user), "priority": 50},
-        }
-
-    # Faculty Leader Items
-    def get_leader_dashboard_items(self, user):
-        # Fetch leader-specific data
-        context = {}
-
-        if user.user_type == "LEADER" and user.is_admin:
-            context = self.get_leader_admin_dashboard_items(user)
-
-        context.update(
-            {
-                "faction_management": {
-                    "data": self.get_faction_management_data(user),
-                    "priority": 10,
-                },
-                "reports": {"data": self.get_reports(user), "priority": 40},
-                "tasks": {"data": self.get_tasks(user), "priority": 50},
-            }
-        )
-
-        return context
-
-    def get_leader_admin_dashboard_items(self, user):
-        return {}
-
-    # Faculty Items
-    def get_faculty_dashboard_items(self, user):
-        # Fetch faculty-specific data
-        context = {}
-
-        if user.is_admin:
-            context = self.get_faculty_admin_dashboard_items(user)
-
-        context.update(
-            {
-                "class_enrollments": {
-                    "data": self.get_faculty_class_enrollments(user),
-                    "priority": 10,
-                },
-                "resources": {"data": self.get_resources(user), "priority": 20},
-            }
-        )
-
-        return context
-
-    def get_faculty_admin_dashboard_items(self, user):
-        return {}
-
-    # Data Methods ###################################################################################
-    def get_faculty_class_enrollments(self, user):
-        return ["class A", "class B"]
-
-    # Placeholder methods for context data fetching
-    def get_attendee_schedule(self, user):
-        # Replace with real logic
-        return ["Event 1", "Event 2"]
-
-    def get_announcements(self, user):
-        # Replace with real logic
-        return ["Announcement 1", "Announcement 2"]
-
-    def get_resources(self, user):
-        # Replace with real logic
-        return ["Resource 1", "Resource 2"]
-
-    def get_faction_management_data(self, user):
-        # Replace with real logic
-        return ["Team Member 1", "Team Member 2"]
-
-    def get_reports(self, user):
-        # Replace with real logic
-        return ["Report 1", "Report 2"]
-
-    def get_tasks(self, user):
-        # Replace with real logic
-        return ["Task 1", "Task 2"]
-
-    def get_classes(self, user):
-        # Replace with real logic
-        return ["Class 1", "Class 2"]
-
-    def get_attendee_performance(self, user):
-        # Replace with real logic
-        return ["Student 1: A", "Student 2: B"]
+        return None
 
 
 class SettingsView(LoginRequiredMixin, TemplateView):
