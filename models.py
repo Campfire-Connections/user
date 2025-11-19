@@ -11,6 +11,7 @@ from facility.managers.faculty import FacultyManager
 from faction.managers.attendee import AttendeeManager
 from faction.managers.leader import LeaderManager
 from enrollment.models.enrollment import Enrollment
+from django.apps import apps
 
 
 class User(AbstractUser):
@@ -99,11 +100,11 @@ from django.dispatch import receiver
 def create_profile(sender, instance, created, **kwargs):
     if created:
         if instance.user_type == "FACULTY":
-            FacultyProfile.objects.create(user=instance)
+            apps.get_model("facility", "FacultyProfile").objects.create(user=instance)
         elif instance.user_type == "ATTENDEE":
-            AttendeeProfile.objects.create(user=instance)
+            apps.get_model("faction", "AttendeeProfile").objects.create(user=instance)
         elif instance.user_type == "LEADER":
-            LeaderProfile.objects.create(user=instance)
+            apps.get_model("faction", "LeaderProfile").objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)

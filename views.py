@@ -19,7 +19,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 # from address.forms import AddressForm
-from facility.models.faculty import Faculty, FacultyProfile
+from facility.models.faculty import FacultyProfile
 from faction.forms.attendee import AttendeeProfileForm
 from faction.forms.leader import LeaderProfileForm
 from facility.forms.faculty import FacultyForm
