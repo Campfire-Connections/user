@@ -151,6 +151,9 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
         """
         Redirect users to their respective dashboards based on their role or permissions.
         """
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
         user = request.user
 
         # Superuser redirection
@@ -164,7 +167,7 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
 
         # Default fallback if no role-specific dashboard is found
         logger.warning(f"No dashboard found for user type: {user.user_type}")
-        return redirect(reverse_lazy("default:dashboard"))
+        return redirect(reverse_lazy("home"))
 
     def get_dashboard_redirect_url(self, user):
         """
