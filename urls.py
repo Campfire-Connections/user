@@ -15,6 +15,7 @@ urlpatterns = [
     path("signup", views.RegisterView.as_view(), name="signup"),
     path("profile/", views.DashboardView.as_view(), name="profile"),
     #path("dashboard", views.DashboardView.as_view(), name="dashboard"),
+    path("admin-portal/", views.AdminDashboardView.as_view(), name="admin_portal_dashboard"),
     path("logout", views.LogoutView.as_view(), name="logout"),
     path("signout", views.LogoutView.as_view(), name="signout"),
     path("account", views.SettingsView.as_view(), name="account_settings"),

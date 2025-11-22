@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.template import loader, TemplateDoesNotExist
 from django.views.generic.edit import FormView
 from django.contrib.auth.tokens import default_token_generator
@@ -145,6 +145,7 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
         "attendee": "attendees:dashboard",
         "leader": "leaders:dashboard",
         "faculty": "facultys:dashboard",
+        "admin": "admin_portal_dashboard",
     }
 
     def dispatch(self, request, *args, **kwargs):
@@ -156,9 +157,8 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
 
         user = request.user
 
-        # Superuser redirection
         if user.is_superuser:
-            return redirect(reverse_lazy("admin:index"))
+            return redirect(reverse_lazy("admin_portal_dashboard"))
 
         # Redirect based on user type
         dashboard_url = self.get_dashboard_redirect_url(user)
@@ -185,6 +185,52 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
             return reverse_lazy(self.dashboard_redirects[user_type])
 
         return None
+
+
+class AdminDashboardView(LoginRequiredMixin, BaseDashboardView):
+    """
+    App-level dashboard for admin users with a shortcut to the Django admin.
+    """
+
+    template_name = "admin/dashboard.html"
+    portal_key = "admin"
+
+    def get_admin_actions_widget(self, _definition):
+        return {
+            "actions": [
+                {
+                    "label": "Open Django Admin",
+                    "url": reverse("admin:index"),
+                    "icon": "fas fa-shield-alt",
+                },
+                {
+                    "label": "Manage Users",
+                    "url": reverse("leaders:index"),
+                    "icon": "fas fa-users-cog",
+                },
+                {
+                    "label": "Reports",
+                    "url": reverse("reports:list_user_reports"),
+                    "icon": "fas fa-chart-bar",
+                },
+            ]
+        }
+
+    def get_admin_resources_widget(self, _definition):
+        return {
+            "items": [
+                {
+                    "title": "Docs",
+                    "description": "Project documentation and support resources.",
+                    "url": "https://docs.djangoproject.com/",
+                },
+                {
+                    "title": "Portal Settings",
+                    "description": "Configure menus, dashboards, and labels.",
+                    "url": reverse("resources"),
+                },
+            ]
+        }
 
 
 class SettingsView(LoginRequiredMixin, TemplateView):

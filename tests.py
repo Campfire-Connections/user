@@ -89,7 +89,7 @@ class DashboardRouteTests(TestCase):
             fetch_redirect_response=False,
         )
 
-    def test_admin_without_superuser_falls_back_to_home(self):
+    def test_admin_without_superuser_redirects_to_admin_dashboard(self):
         with mute_profile_signals():
             admin_user = User.objects.create_user(
                 username="admin.route",
@@ -100,11 +100,11 @@ class DashboardRouteTests(TestCase):
         response = self.client.get(self.dashboard_url)
         self.assertRedirects(
             response,
-            reverse("home"),
+            reverse("admin_portal_dashboard"),
             fetch_redirect_response=False,
         )
 
-    def test_superuser_redirects_to_admin(self):
+    def test_superuser_redirects_to_admin_portal(self):
         with mute_profile_signals():
             superuser = User.objects.create_superuser(
                 username="super.route",
@@ -115,7 +115,7 @@ class DashboardRouteTests(TestCase):
         response = self.client.get(self.dashboard_url)
         self.assertRedirects(
             response,
-            reverse("admin:index"),
+            reverse("admin_portal_dashboard"),
             fetch_redirect_response=False,
         )
 
