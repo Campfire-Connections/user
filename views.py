@@ -173,6 +173,12 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
         """
         Determine the appropriate dashboard URL for the user.
         """
+        override_route = getattr(user, "dashboard_route", None)
+        if callable(override_route):
+            override_route = override_route()
+        if override_route:
+            return reverse_lazy(override_route)
+
         user_type = getattr(user, "user_type", "").lower()
 
         if user_type in self.dashboard_redirects:
