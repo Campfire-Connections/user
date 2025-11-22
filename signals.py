@@ -1,5 +1,7 @@
 # user/signals.py
 
+from threading import Thread
+
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -37,10 +39,14 @@ def send_activation_email(sender, instance, created, **kwargs):
             "activation_url": activation_url,
         },
     )
-    send_mail(
-        subject="Activate Your Account",
-        message=message,
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-        recipient_list=[instance.email],
-        fail_silently=True,
-    )
+
+    def _deliver():
+        send_mail(
+            subject="Activate Your Account",
+            message=message,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[instance.email],
+            fail_silently=True,
+        )
+
+    Thread(target=_deliver, daemon=True).start()
