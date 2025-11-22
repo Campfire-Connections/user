@@ -7,12 +7,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from user.models import (
-    User,
-    create_profile as create_profile_signal,
-    save_profile as save_profile_signal,
-    update_profile_slug as update_profile_slug_signal,
-)
+from user.models import User, ensure_profile as ensure_profile_signal
 
 
 class UserModelTests(TestCase):
@@ -29,11 +24,7 @@ class UserModelTests(TestCase):
 
 @contextmanager
 def mute_profile_signals():
-    receivers = [
-        create_profile_signal,
-        save_profile_signal,
-        update_profile_slug_signal,
-    ]
+    receivers = [ensure_profile_signal]
     for receiver in receivers:
         post_save.disconnect(receiver, sender=User)
     try:

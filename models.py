@@ -54,6 +54,13 @@ class User(AbstractUser):
         return Enrollment.objects.filter(user=self)
 
 
+PROFILE_MODEL_MAP = {
+    User.UserType.FACULTY: ("facility", "FacultyProfile"),
+    User.UserType.ATTENDEE: ("faction", "AttendeeProfile"),
+    User.UserType.LEADER: ("faction", "LeaderProfile"),
+}
+
+
 class BaseUserProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -96,28 +103,35 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
-@receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    if created:
-        if instance.user_type == "FACULTY":
-            apps.get_model("facility", "FacultyProfile").objects.create(user=instance)
-        elif instance.user_type == "ATTENDEE":
-            apps.get_model("faction", "AttendeeProfile").objects.create(user=instance)
-        elif instance.user_type == "LEADER":
-            apps.get_model("faction", "LeaderProfile").objects.create(user=instance)
+def _get_profile_model(user_type):
+    mapping = PROFILE_MODEL_MAP.get(user_type)
+    if not mapping:
+        return None
+    app_label, model_name = mapping
+    return apps.get_model(app_label, model_name)
 
 
 @receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
+def ensure_profile(sender, instance, created, **kwargs):
+    """
+    Create the related profile when a user is added and keep its slug in sync
+    whenever identifying fields change.
+    """
+
+    model = _get_profile_model(instance.user_type)
+    if not model:
+        return
+
     profile = instance.get_profile()
-    if profile:
-        profile.save()
+    if not profile:
+        if not created:
+            return
+        profile = model.objects.create(user=instance)
 
+    if not profile:
+        return
 
-@receiver(post_save, sender=User)
-def update_profile_slug(sender, instance, **kwargs):
-    profile = instance.get_profile()
-    if profile:
-        # Regenerate the slug in case the first_name or last_name changes
-        profile.slug = profile.generate_slug()
-        profile.save()
+    desired_slug = profile.generate_slug()
+    if profile.slug != desired_slug:
+        profile.slug = desired_slug
+        profile.save(update_fields=["slug"])
