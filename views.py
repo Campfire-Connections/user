@@ -25,7 +25,8 @@ from faction.forms.leader import LeaderProfileForm
 from facility.forms.faculty import FacultyForm
 from faction.models.leader import LeaderProfile
 from faction.models.attendee import AttendeeProfile
-from core.views.base import BaseDashboardView
+from core.views.base import BaseDashboardView, BaseTableListView
+from user.tables import AdminUserTable
 
 
 from .forms import RegistrationForm
@@ -205,7 +206,7 @@ class AdminDashboardView(LoginRequiredMixin, BaseDashboardView):
                 },
                 {
                     "label": "Manage Users",
-                    "url": reverse("leaders:index"),
+                    "url": reverse("admin_user_list"),
                     "icon": "fas fa-users-cog",
                 },
                 {
@@ -225,12 +226,29 @@ class AdminDashboardView(LoginRequiredMixin, BaseDashboardView):
                     "url": "https://docs.djangoproject.com/",
                 },
                 {
-                    "title": "Portal Settings",
-                    "description": "Configure menus, dashboards, and labels.",
-                    "url": reverse("resources"),
+                    "title": "Manage Users",
+                    "description": "View all users and roles.",
+                    "url": reverse("admin_user_list"),
                 },
             ]
         }
+
+    def get_admin_users_widget(self, _definition):
+        return {
+            "table_class": AdminUserTable,
+            "queryset": User.objects.order_by("username"),
+        }
+
+
+class AdminUserListView(LoginRequiredMixin, BaseTableListView):
+    model = User
+    table_class = AdminUserTable
+    template_name = "admin/user_list.html"
+    context_object_name = "users"
+    paginate_by = 25
+
+    def get_queryset(self):
+        return User.objects.order_by("username")
 
 
 class SettingsView(LoginRequiredMixin, TemplateView):
