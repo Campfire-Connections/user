@@ -85,7 +85,7 @@ class DashboardRouteTests(TestCase):
         response = self.client.get(self.dashboard_url)
         self.assertRedirects(
             response,
-            reverse("facultys:dashboard"),
+            reverse("home"),
             fetch_redirect_response=False,
         )
 

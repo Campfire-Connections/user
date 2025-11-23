@@ -139,7 +139,7 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
     dashboard_redirects = {
         "attendee": "attendees:dashboard",
         "leader": "leaders:dashboard",
-        "faculty": "facultys:dashboard",
+        "faculty": "faculty:dashboard",
         "admin": "admin_portal_dashboard",
     }
 
@@ -167,6 +167,17 @@ class DashboardView(LoginRequiredMixin, BaseDashboardView):
             return reverse_lazy(override)
 
         role = getattr(user, "user_type", "").lower()
+        if role == "faculty":
+            from core.utils import get_faculty_profile
+
+            profile = get_faculty_profile(user)
+            facility = getattr(profile, "facility", None)
+            if facility:
+                return reverse_lazy(
+                    "facilities:faculty:dashboard",
+                    kwargs={"facility_slug": facility.slug},
+                )
+            return None
         return reverse_lazy(self.dashboard_redirects.get(role, "home"))
 
 
