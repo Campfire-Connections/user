@@ -241,6 +241,7 @@ class PublicUserDetailView(AdminUserDetailView):
 class AdminUserEditRedirectView(LoginRequiredMixin, DetailView):
     model = User
     slug_field = "username"
+    slug_url_kwarg = "username"
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -250,6 +251,7 @@ class AdminUserEditRedirectView(LoginRequiredMixin, DetailView):
 class AdminUserDeleteRedirectView(LoginRequiredMixin, DetailView):
     model = User
     slug_field = "username"
+    slug_url_kwarg = "username"
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
