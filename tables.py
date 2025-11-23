@@ -38,7 +38,7 @@ class AdminUserTable(BaseTable):
                     profile = None
             if profile and hasattr(profile, "get_absolute_url"):
                 return profile.get_absolute_url()
-            return reverse("user_detail", kwargs={"username": record.username})
+            return reverse("admin_user_detail", kwargs={"username": record.username})
         if action == "edit":
             return reverse("admin_user_edit", kwargs={"username": record.username})
         if action == "delete":
