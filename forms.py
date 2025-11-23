@@ -2,6 +2,7 @@
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import ValidationError
 
 from user.models import User
 
@@ -23,9 +24,36 @@ class ProfileUserFieldsMixin(forms.ModelForm):
             self.fields["user_first_name"].initial = user.first_name
             self.fields["user_last_name"].initial = user.last_name
 
+    def clean_user_username(self):
+        username = self.cleaned_data["user_username"]
+        existing = User.objects.filter(username=username)
+        # Allow keeping the same username on update
+        if self.instance and getattr(self.instance, "user_id", None):
+            existing = existing.exclude(pk=self.instance.user_id)
+        if existing.exists():
+            raise ValidationError("Username is already taken.")
+        return username
+
     def save(self, commit=True):
         profile = super().save(commit=False)
-        user = profile.user
+        user = getattr(profile, "user", None)
+        user_id = getattr(profile, "user_id", None)
+        if not user_id:
+            # Create a new user if one does not exist yet
+            user = User(
+                user_type=self._infer_user_type(profile),
+                is_active=True,
+                username=self.cleaned_data["user_username"],
+                email=self.cleaned_data["user_email"],
+                first_name=self.cleaned_data["user_first_name"],
+                last_name=self.cleaned_data["user_last_name"],
+            )
+            profile.user = user
+        elif not user:
+            # Shouldn't happen, but guard anyway
+            user = User.objects.get(id=user_id)
+            profile.user = user
+
         user.username = self.cleaned_data["user_username"]
         user.email = self.cleaned_data["user_email"]
         user.first_name = self.cleaned_data["user_first_name"]
@@ -34,6 +62,17 @@ class ProfileUserFieldsMixin(forms.ModelForm):
             user.save()
             profile.save()
         return profile
+
+    def _infer_user_type(self, profile):
+        """Best-effort user_type based on the profile class name."""
+        name = profile.__class__.__name__.lower()
+        if "leader" in name:
+            return User.UserType.LEADER
+        if "attendee" in name:
+            return User.UserType.ATTENDEE
+        if "faculty" in name:
+            return User.UserType.FACULTY
+        return User.UserType.OTHER
 
 
 class RegistrationForm(UserCreationForm):

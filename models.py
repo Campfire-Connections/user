@@ -123,6 +123,9 @@ def ensure_profile(sender, instance, created, **kwargs):
         return
 
     profile = instance.get_profile()
+    if profile and not getattr(profile, "pk", None):
+        # Unsaved profile instance (e.g., supplied by a form). Let the form save it.
+        return
     if not profile:
         if not created:
             return
