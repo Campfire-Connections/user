@@ -17,6 +17,21 @@ urlpatterns = [
     #path("dashboard", views.DashboardView.as_view(), name="dashboard"),
     path("admin-portal/", views.AdminDashboardView.as_view(), name="admin_portal_dashboard"),
     path("admin/users/", views.AdminUserListView.as_view(), name="admin_user_list"),
+    path(
+        "admin/users/<str:username>/",
+        views.AdminUserDetailView.as_view(),
+        name="admin_user_detail",
+    ),
+    path(
+        "admin/users/<str:username>/edit/",
+        views.AdminUserEditRedirectView.as_view(),
+        name="admin_user_edit",
+    ),
+    path(
+        "admin/users/<str:username>/delete/",
+        views.AdminUserDeleteRedirectView.as_view(),
+        name="admin_user_delete",
+    ),
     path("logout", views.LogoutView.as_view(), name="logout"),
     path("signout", views.LogoutView.as_view(), name="signout"),
     path("account", views.SettingsView.as_view(), name="account_settings"),
