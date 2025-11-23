@@ -68,3 +68,28 @@ class RegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class AdminUserForm(forms.ModelForm):
+    """Lightweight admin-facing form for portal user edits."""
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "user_type",
+            "is_admin",
+            "is_active",
+        ]
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+            "user_type": forms.Select(attrs={"class": "form-control"}),
+            "is_admin": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }

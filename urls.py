@@ -24,7 +24,7 @@ urlpatterns = [
     ),
     path(
         "admin/users/<str:username>/edit/",
-        views.AdminUserEditRedirectView.as_view(),
+        views.AdminUserUpdateView.as_view(),
         name="admin_user_edit",
     ),
     path(

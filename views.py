@@ -9,6 +9,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.tokens import default_token_generator
 from django.views.generic import TemplateView, DetailView
+from django.views.generic.edit import UpdateView
 
 from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse, NoReverseMatch
@@ -30,7 +31,7 @@ from facility.models.faculty import FacultyProfile
 from faction.models.leader import LeaderProfile
 from faction.models.attendee import AttendeeProfile
 
-from .forms import RegistrationForm
+from .forms import RegistrationForm, AdminUserForm
 from .models import User
 
 logger = logging.getLogger(__name__)
@@ -238,14 +239,16 @@ class PublicUserDetailView(AdminUserDetailView):
     pass
 
 
-class AdminUserEditRedirectView(LoginRequiredMixin, DetailView):
+class AdminUserUpdateView(LoginRequiredMixin, UpdateView):
     model = User
+    form_class = AdminUserForm
+    template_name = "admin/user_form.html"
     slug_field = "username"
     slug_url_kwarg = "username"
+    context_object_name = "user_obj"
 
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        return redirect(reverse("admin_user_detail", kwargs={"username": self.object.username}))
+    def get_success_url(self):
+        return reverse("admin_user_detail", kwargs={"username": self.object.username})
 
 
 class AdminUserDeleteRedirectView(LoginRequiredMixin, DetailView):
