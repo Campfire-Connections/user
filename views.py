@@ -245,7 +245,7 @@ class AdminUserEditRedirectView(LoginRequiredMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        return redirect(reverse("admin:user_user_change", args=[self.object.pk]))
+        return redirect(reverse("admin_user_detail", kwargs={"username": self.object.username}))
 
 
 class AdminUserDeleteRedirectView(LoginRequiredMixin, DetailView):
@@ -255,4 +255,4 @@ class AdminUserDeleteRedirectView(LoginRequiredMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        return redirect(reverse("admin:user_user_delete", args=[self.object.pk]))
+        return redirect(reverse("admin_user_detail", kwargs={"username": self.object.username}))
