@@ -1,7 +1,5 @@
 # user/signals.py
 
-from threading import Thread
-
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -13,6 +11,8 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from user.models import User
+from core.tasks import run_async
+from core.logging import log_event
 
 
 @receiver(post_save, sender=User)
@@ -48,5 +48,10 @@ def send_activation_email(sender, instance, created, **kwargs):
             recipient_list=[instance.email],
             fail_silently=True,
         )
+        log_event(
+            "email.activation.sent",
+            actor_id=getattr(instance, "id", None),
+            extra={"email": instance.email},
+        )
 
-    Thread(target=_deliver, daemon=True).start()
+    run_async(_deliver)
