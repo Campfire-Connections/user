@@ -12,6 +12,7 @@ from faction.managers.attendee import AttendeeManager
 from faction.managers.leader import LeaderManager
 from enrollment.models.enrollment import Enrollment
 from django.apps import apps
+from django.db import transaction
 
 
 class User(AbstractUser):
@@ -112,6 +113,7 @@ def _get_profile_model(user_type):
 
 
 @receiver(post_save, sender=User)
+@transaction.atomic
 def ensure_profile(sender, instance, created, **kwargs):
     """
     Create the related profile when a user is added and keep its slug in sync
@@ -122,10 +124,12 @@ def ensure_profile(sender, instance, created, **kwargs):
     if not model:
         return
 
-    profile = instance.get_profile()
-    if profile and not getattr(profile, "pk", None):
-        # Unsaved profile instance (e.g., supplied by a form). Let the form save it.
-        return
+    profile = (
+        model.objects.select_for_update()
+        .filter(user=instance)
+        .first()
+    )
+
     if not profile:
         if not created:
             return
@@ -136,5 +140,4 @@ def ensure_profile(sender, instance, created, **kwargs):
 
     desired_slug = profile.generate_slug()
     if profile.slug != desired_slug:
-        profile.slug = desired_slug
-        profile.save(update_fields=["slug"])
+        model.objects.filter(pk=profile.pk).update(slug=desired_slug)
